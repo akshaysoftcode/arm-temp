@@ -1,0 +1,799 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/subscriptionDeploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "attemptId": {
+      "type": "string"
+    },
+    "rgNameA": {
+      "type": "string"
+    },
+    "rgNameB": {
+      "type": "string"
+    },    
+    
+    "location": {
+        "type": "string"
+    }
+    
+  },
+  "variables": {
+    
+
+            "AtId": "[ parameters('attemptId')]",
+            "rgA": "[ parameters('rgNameA')]",
+            "rgB": "[ parameters('rgNameB')]",
+            "loc": "[parameters('location')]"
+
+            
+
+
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Resources/resourceGroups",
+      "apiVersion": "2021-03-01",
+      "name": "[concat(parameters('attemptId'), '-' , parameters('rgNameA'))]",
+      "location": "[parameters('location')]",
+      "properties": {}
+    },
+    {
+      "type": "Microsoft.Resources/resourceGroups",
+      "apiVersion": "2021-03-01",
+      "name": "[concat(parameters('attemptId'), '-' , parameters('rgNameB'))]",
+      "location": "[parameters('location')]",
+      "properties": {}
+    },
+    {
+      "name": "nestDepPrimary",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2021-03-01",
+      "dependsOn": [
+        "[concat('Microsoft.Resources/resourceGroups/',concat(parameters('attemptId'), '-' , parameters('rgNameA')))]"
+      ],
+      "resourceGroup": "[concat(parameters('attemptId'), '-' , parameters('rgNameA'))]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "parameters": {
+            "attemptId": {
+              "type": "string"
+            },
+            "rgNameA": {
+              "type": "string"
+            },  
+            "rgNameB": {
+              "type": "string"
+            },  
+            
+            "location": {
+            "type": "string"
+        },
+        "networkInterfaceName": {
+            "type": "string"
+        },
+        "networkSecurityGroupName": {
+            "type": "string"
+        },
+        "networkSecurityGroupRules": {
+            "type": "array"
+        },
+        "subnetName": {
+            "type": "string"
+        },
+        "virtualNetworkName": {
+            "type": "string"
+        },
+        "addressPrefixes": {
+            "type": "array"
+        },
+        "subnets": {
+            "type": "array"
+        },
+        "publicIpAddressName": {
+            "type": "string"
+        },
+        "publicIpAddressType": {
+            "type": "string"
+        },
+        "publicIpAddressSku": {
+            "type": "string"
+        },
+        "virtualMachineName": {
+            "type": "string"
+        },
+        "virtualMachineComputerName": {
+            "type": "string"
+        },
+        "virtualMachineRG": {
+            "type": "string"
+        },
+        "osDiskType": {
+            "type": "string"
+        },
+        "virtualMachineSize": {
+            "type": "string"
+        },
+        "adminUsername": {
+            "type": "string"
+        },
+        "adminPassword": {
+            "type": "secureString"
+        },
+        "patchMode": {
+            "type": "string"
+        },
+        "enableHotpatching": {
+            "type": "bool"
+        }
+
+          },
+          "variables": {
+           
+            
+            "nsgId": "[resourceId(resourceGroup().name, 'Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroupName'))]",
+        "vnetId": "[resourceId(resourceGroup().name,'Microsoft.Network/virtualNetworks', parameters('virtualNetworkName'))]",
+        "subnetRef": "[concat(variables('vnetId'), '/subnets/', parameters('subnetName'))]"
+
+          
+
+          },          
+          "resources": [
+
+            {
+             "name": "[parameters('publicIpAddressName')]",
+            "type": "Microsoft.Network/publicIpAddresses",
+            "apiVersion": "2021-03-01",
+            "location": "[parameters('location')]",
+            "properties": {
+                "publicIpAllocationMethod": "[parameters('publicIpAddressType')]"
+            },
+            "sku": {
+                "name": "[parameters('publicIpAddressSku')]"
+            },
+            "tags": {
+                "Name": "[concat(parameters('attemptId'), '-', 'RouterPubIP')]"
+            }
+        },
+        
+
+
+        {
+             "name": "[parameters('virtualNetworkName')]",
+            "type": "Microsoft.Network/virtualNetworks",
+            "apiVersion": "2021-03-01",
+            "location": "[parameters('location')]",
+            "properties": {
+                "addressSpace": {
+                    "addressPrefixes": "[parameters('addressPrefixes')]"
+                },
+                "subnets": "[parameters('subnets')]"
+            },
+            "tags": {
+                "Name": "[concat(parameters('attemptId'), '-', 'RouterVnet')]"
+            }
+        },
+
+
+
+        {
+           "name": "[parameters('networkInterfaceName')]",
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "2021-03-01",
+            "location": "[parameters('location')]",
+            "dependsOn": [
+                "[concat('Microsoft.Network/networkSecurityGroups/', parameters('networkSecurityGroupName'))]",
+                "[concat('Microsoft.Network/virtualNetworks/', parameters('virtualNetworkName'))]",
+                "[concat('Microsoft.Network/publicIpAddresses/', parameters('publicIpAddressName'))]"
+            ],
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig1",
+                        "properties": {
+                            "subnet": {
+                                "id": "[variables('subnetRef')]"
+                            },
+                            "privateIPAllocationMethod": "Dynamic",
+                            "publicIpAddress": {
+                                "id": "[resourceId(resourceGroup().name, 'Microsoft.Network/publicIpAddresses', parameters('publicIpAddressName'))]"
+                            }
+                        }
+                    }
+                ],
+                "networkSecurityGroup": {
+                    "id": "[variables('nsgId')]"
+                }
+            },
+            "tags": {
+                "Name": "[concat(parameters('attemptId'), '-', 'RouterNIC')]"
+            }
+        },
+        {
+            "name": "[parameters('networkSecurityGroupName')]",
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "apiVersion": "2021-03-01",
+            "location": "[parameters('location')]",
+            "properties": {
+                "securityRules": "[parameters('networkSecurityGroupRules')]"
+            },
+            "tags": {
+                "Name": "[concat(parameters('attemptId'), '-', 'RouterNSG')]"
+            }
+        },
+        
+        {
+              "name": "[parameters('virtualMachineName')]",
+            "type": "Microsoft.Compute/virtualMachines",
+            "apiVersion": "2021-03-01",
+            "location": "[parameters('location')]",
+            "dependsOn": [
+                "[concat('Microsoft.Network/networkInterfaces/', parameters('networkInterfaceName'))]"
+            ],
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "[parameters('virtualMachineSize')]"
+                },
+                "storageProfile": {
+                    "osDisk": {
+                        "createOption": "fromImage",
+                        "managedDisk": {
+                            "storageAccountType": "[parameters('osDiskType')]"
+                        }
+                    },
+                    "imageReference": {
+                        "id": "/subscriptions/e1770615-3406-432b-8593-fb28152e7d9f/resourceGroups/new-test/providers/Microsoft.Compute/galleries/newtestgal/images/newdef/versions/1.2.5"
+                    }
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaceName'))]"
+                        }
+                    ]
+                },
+                "osProfile": {
+                    "computerName": "[parameters('virtualMachineComputerName')]",
+                    "adminUsername": "[parameters('adminUsername')]",
+                    "adminPassword": "[parameters('adminPassword')]",
+                    "windowsConfiguration": {
+                        "enableAutomaticUpdates": true,
+                        "provisionVmAgent": true,
+                        "patchSettings": {
+                            "enableHotpatching": "[parameters('enableHotpatching')]",
+                            "patchMode": "[parameters('patchMode')]"
+                        }
+                    }
+                },
+                "diagnosticsProfile": {
+                    "bootDiagnostics": {
+                        "enabled": true
+                    }
+                }
+            },
+            "tags": {
+                "Name": "[concat(parameters('attemptId'), '-', 'RouterVM')]"
+            }
+        }
+
+
+          ],
+          
+          "outputs": {
+        "adminUsername": {
+            "type": "string",
+            "value": "[parameters('adminUsername')]"
+        }
+    }
+
+
+        },
+        "parameters": {
+            "rgNameA": {
+      "value": "[concat(variables('AtId'), '-' , variables('rgA'))]"
+    },
+    "rgNameB": {
+      "value": "[concat(variables('AtId'), '-' , variables('rgB'))]"
+    },
+    "attemptId": {
+      "value": "[variables('AtId')]"
+    },
+        
+         "location": {
+            "value": "[variables('loc')]"
+        },
+        "networkInterfaceName": {
+            "value": "[concat(variables('AtId'), '-' , 'RouterIpNIC')]"
+        },
+        "networkSecurityGroupName": {
+            "value": "[concat(variables('AtId'), '-' , 'routerIPVM-nsg')]"
+        },
+        "networkSecurityGroupRules": {
+            "value": [
+                {
+                    "name": "default-allow-rdp",
+                    "properties": {
+                        "priority": 1000,
+                        "protocol": "TCP",
+                        "access": "Allow",
+                        "direction": "Inbound",
+                        "sourceApplicationSecurityGroups": [],
+                        "destinationApplicationSecurityGroups": [],
+                        "sourceAddressPrefix": "*",
+                        "sourcePortRange": "*",
+                        "destinationAddressPrefix": "*",
+                        "destinationPortRange": "3389"
+                    }
+                }
+            ]
+        },
+        "subnetName": {
+            "value": "[concat(variables('AtId'), '-' , 'RouterSubnet')]"
+        },
+        "virtualNetworkName": {
+            "value": "[concat(variables('AtId'), '-' , 'RouteNew-vnet')]"
+        },
+        "addressPrefixes": {
+            "value": [
+                "10.22.0.0/16"
+            ]
+        },
+        "subnets": {
+            "value": [
+                {
+                    "name": "[concat(variables('AtId'), '-' , 'RouterSubnet')]",
+                    "properties": {
+                        "addressPrefix": "10.22.1.0/24"
+                    }
+                }
+            ]
+        },
+        "publicIpAddressName": {
+            "value": "[concat(variables('AtId'),'-','routerIPVM-ip')]"
+        },
+        "publicIpAddressType": {
+            "value": "Static"
+        },
+        "publicIpAddressSku": {
+            "value": "Standard"
+        },
+        "virtualMachineName": {
+            "value": "[concat(variables('AtId'), '-' , 'routerIPVM')]"
+        },
+        "virtualMachineComputerName": {
+            "value": "routerIPVM"
+        },
+        "virtualMachineRG": {
+            "value": "[concat(variables('AtId'), '-' , variables('rgA'))]"
+        },
+        "osDiskType": {
+            "value": "StandardSSD_LRS"
+        },
+        "virtualMachineSize": {
+            "value": "Standard_B2s"
+        },
+        "adminUsername": {
+            "value": "infraops"
+        },
+        "adminPassword": {
+            "value": "Qwertyui@123"
+        },
+        "patchMode": {
+            "value": "AutomaticByOS"
+        },
+        "enableHotpatching": {
+            "value": false
+        }
+        
+        }
+      }
+    },
+
+
+
+
+    {
+      "name": "nestDepSecondary",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2021-03-01",
+      "dependsOn": [
+        "[concat('Microsoft.Resources/resourceGroups/', concat(parameters('attemptId'), '-' , parameters('rgNameB')))]"
+      ],
+      "resourceGroup": "[concat(parameters('attemptId'), '-' , parameters('rgNameB'))]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "parameters": {
+            "attemptId": {
+              "type": "string"
+            },
+            "rgNameA": {
+              "type": "string"
+            },
+            "rgNameB": {
+              "type": "string"
+            },    
+            
+            "location": {
+            "type": "string"
+        },
+        "networkInterfaceName": {
+            "type": "string"
+        },
+        "networkSecurityGroupName": {
+            "type": "string"
+        },
+        "networkSecurityGroupRules": {
+            "type": "array"
+        },
+        "subnetName": {
+            "type": "string"
+        },
+        "virtualNetworkName": {
+            "type": "string"
+        },
+        "addressPrefixes": {
+            "type": "array"
+        },
+        "subnets": {
+            "type": "array"
+        },
+        "publicIpAddressName": {
+            "type": "string"
+        },
+        "publicIpAddressType": {
+            "type": "string"
+        },
+        "publicIpAddressSku": {
+            "type": "string"
+        },
+        "virtualMachineName": {
+            "type": "string"
+        },
+        "virtualMachineComputerName": {
+            "type": "string"
+        },
+        "virtualMachineRG": {
+            "type": "string"
+        },
+        "osDiskType": {
+            "type": "string"
+        },
+        "virtualMachineSize": {
+            "type": "string"
+        },
+        "adminUsername": {
+            "type": "string"
+        },
+        "adminPassword": {
+            "type": "secureString"
+        },
+        "patchMode": {
+            "type": "string"
+        },
+        "enableHotpatching": {
+            "type": "bool"
+        }
+              
+
+
+          },
+          "variables": {
+           
+
+             "nsgId": "[resourceId(resourceGroup().name, 'Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroupName'))]",
+        "vnetId": "[resourceId(resourceGroup().name,'Microsoft.Network/virtualNetworks', parameters('virtualNetworkName'))]",
+        "subnetRef": "[concat(variables('vnetId'), '/subnets/', parameters('subnetName'))]"
+
+          },          
+          "resources": [
+
+             {
+            "name": "[parameters('networkInterfaceName')]",
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "2021-03-01",
+            "location": "[parameters('location')]",
+            "dependsOn": [
+                "[concat('Microsoft.Network/networkSecurityGroups/', parameters('networkSecurityGroupName'))]",
+                "[concat('Microsoft.Network/virtualNetworks/', parameters('virtualNetworkName'))]",
+                "[concat('Microsoft.Network/publicIpAddresses/', parameters('publicIpAddressName'))]"
+            ],
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig1",
+                        "properties": {
+                            "subnet": {
+                                "id": "[variables('subnetRef')]"
+                            },
+                            "privateIPAllocationMethod": "Dynamic",
+                            "publicIpAddress": {
+                                "id": "[resourceId(resourceGroup().name, 'Microsoft.Network/publicIpAddresses', parameters('publicIpAddressName'))]"
+                            }
+                        }
+                    }
+                ],
+                "networkSecurityGroup": {
+                    "id": "[variables('nsgId')]"
+                }
+            },
+            "tags": {
+                "Name": "[concat(parameters('attemptId'), '-', 'OnPremNIC')]"
+            }
+        },
+        {
+            "name": "[parameters('networkSecurityGroupName')]",
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "apiVersion": "2021-03-01",
+            "location": "[parameters('location')]",
+            "properties": {
+                "securityRules": "[parameters('networkSecurityGroupRules')]"
+            },
+            "tags": {
+                "Name": "[concat(parameters('attemptId'), '-', 'OnPremNSG')]"
+            }
+        },
+        {
+            "name": "[parameters('virtualNetworkName')]",
+            "type": "Microsoft.Network/virtualNetworks",
+            "apiVersion": "2021-03-01",
+            "location": "[parameters('location')]",
+            "properties": {
+                "addressSpace": {
+                    "addressPrefixes": "[parameters('addressPrefixes')]"
+                },
+                "subnets": "[parameters('subnets')]"
+            },
+            "tags": {
+                "Name": "[concat(parameters('attemptId'), '-', 'OnPremVnet')]"
+            }
+        },
+        {
+            "name": "[parameters('publicIpAddressName')]",
+            "type": "Microsoft.Network/publicIpAddresses",
+            "apiVersion": "2021-03-01",
+            "location": "[parameters('location')]",
+            "properties": {
+                "publicIpAllocationMethod": "[parameters('publicIpAddressType')]"
+            },
+            "sku": {
+                "name": "[parameters('publicIpAddressSku')]"
+            },
+            "tags": {
+                "Name": "[concat(parameters('attemptId'), '-', 'OnPremPubIP')]"
+            }
+        },
+        {
+            "name": "[parameters('virtualMachineName')]",
+            "type": "Microsoft.Compute/virtualMachines",
+            "apiVersion": "2021-03-01",
+            "location": "[parameters('location')]",
+            "dependsOn": [
+                "[concat('Microsoft.Network/networkInterfaces/', parameters('networkInterfaceName'))]"
+            ],
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "[parameters('virtualMachineSize')]"
+                },
+                "storageProfile": {
+                    "osDisk": {
+                        "createOption": "fromImage",
+                        "managedDisk": {
+                            "storageAccountType": "[parameters('osDiskType')]"
+                        }
+                    },
+                    "imageReference": {
+                        "id": "/subscriptions/e1770615-3406-432b-8593-fb28152e7d9f/resourceGroups/new-test/providers/Microsoft.Compute/galleries/newtestgal/images/newdef/versions/1.2.5"
+                    }
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaceName'))]"
+                        }
+                    ]
+                },
+                "osProfile": {
+                    "computerName": "[parameters('virtualMachineComputerName')]",
+                    "adminUsername": "[parameters('adminUsername')]",
+                    "adminPassword": "[parameters('adminPassword')]",
+                    "windowsConfiguration": {
+                        "enableAutomaticUpdates": true,
+                        "provisionVmAgent": true,
+                        "patchSettings": {
+                            "enableHotpatching": "[parameters('enableHotpatching')]",
+                            "patchMode": "[parameters('patchMode')]"
+                        }
+                    }
+                },
+                "diagnosticsProfile": {
+                    "bootDiagnostics": {
+                        "enabled": true
+                    }
+                }
+            },
+            "tags": {
+                "Name": "[concat(parameters('attemptId'), '-', 'OnPremVM')]"
+            }
+        }
+
+
+          ],
+          
+          "outputs": {
+        "adminUsername": {
+            "type": "string",
+            "value": "[parameters('adminUsername')]"
+        }
+    }
+
+
+        },
+        "parameters": {
+            "rgNameA": {
+      "value": "[concat(variables('AtId'), '-' , variables('rgA'))]"
+    },
+    "rgNameB": {
+      "value": "[concat(variables('AtId'), '-' , variables('rgB'))]"
+    },
+    "attemptId": {
+      "value": "[variables('AtId')]"
+    },
+       "location": {
+            "value": "[variables('loc')]"
+        },
+        "networkInterfaceName": {
+            "value": "[concat(variables('AtId'), '-' , 'OnPremIpNIC')]"
+        },
+        "networkSecurityGroupName": {
+            "value": "[concat(variables('AtId'), '-' , 'OnPremVM-nsg')]"
+        },
+        "networkSecurityGroupRules": {
+            "value": [
+                {
+                    "name": "default-allow-rdp",
+                    "properties": {
+                        "priority": 1000,
+                        "protocol": "TCP",
+                        "access": "Allow",
+                        "direction": "Inbound",
+                        "sourceApplicationSecurityGroups": [],
+                        "destinationApplicationSecurityGroups": [],
+                        "sourceAddressPrefix": "*",
+                        "sourcePortRange": "*",
+                        "destinationAddressPrefix": "*",
+                        "destinationPortRange": "3389"
+                    }
+                }
+            ]
+        },
+        "subnetName": {
+            "value": "[concat(variables('AtId'), '-' , 'OnPremSubnet')]"
+        },
+        "virtualNetworkName": {
+            "value": "[concat(variables('AtId'), '-' , 'OnPremRG-vnet')]"
+        },
+        "addressPrefixes": {
+            "value": [
+                "10.20.0.0/16"
+            ]
+        },
+        "subnets": {
+            "value": [
+                {
+                    "name": "[concat(variables('AtId'), '-' , 'OnPremSubnet')]",
+                    "properties": {
+                        "addressPrefix": "10.20.1.0/24"
+                    }
+                }
+            ]
+        },
+        "publicIpAddressName": {
+            "value": "[concat(variables('AtId'),'-','OnPremVM-ip')]"
+        },
+        "publicIpAddressType": {
+            "value": "Dynamic"
+        },
+        "publicIpAddressSku": {
+            "value": "Basic"
+        },
+        "virtualMachineName": {
+            "value": "[concat(variables('AtId'), '-' , 'OnPremVM')]"
+        },
+        "virtualMachineComputerName": {
+            "value": "OnPremVM"
+        },
+        "virtualMachineRG": {
+            "value": "[concat(variables('AtId'), '-' , variables('rgB'))]"
+        },
+        "osDiskType": {
+            "value": "StandardSSD_LRS"
+        },
+        "virtualMachineSize": {
+            "value": "Standard_B2s"
+        },
+        "adminUsername": {
+            "value": "infraops"
+        },
+        "adminPassword": {
+            "value": "Qwertyui@123"
+        },
+        "patchMode": {
+            "value": "AutomaticByOS"
+        },
+        "enableHotpatching": {
+            "value": false
+        }
+
+
+        }
+      }
+    },    
+    {
+      "name": "cstmpoldeftags",
+      "type": "Microsoft.Authorization/policyDefinitions",
+      "apiVersion": "2021-03-01",
+      "properties": {
+        "policyType": "Custom",
+        "mode": "All",
+        "displayName": "My New Custom Policy (tags)",
+        "description": "A custom policy created using ARM deployment (tags)",
+        "policyRule": {
+          "if": {
+            "allOf": [{
+              "not": {
+                  "field": "tags",
+                  "containsKey": "ApplicationOwner"
+              }
+            }]
+          },
+          "then": {
+            "effect": "audit"
+          }
+        },
+        "metadata": {},
+        "parameters": {}
+      }
+    },
+    {
+      "type": "Microsoft.Authorization/policyAssignments",
+      "apiVersion": "2021-03-01",
+      "dependsOn": [
+        "Microsoft.Authorization/policyDefinitions/cstmpoldeftags"
+      ],
+      "name": "AuditTags-AppOwner",
+      "properties": {
+        "scope": "[subscription().id]",
+        "policyDefinitionId": "[resourceId('Microsoft.Authorization/policyDefinitions', 'cstmpoldeftags')]"
+      }
+    }    
+  ],
+  "outputs": {
+    "pVNetRG": {
+      "type":  "string",
+      "value": "[parameters('rgNameA')]"
+    },
+    "sVNetRG": {
+      "type":  "string",
+      "value": "[parameters('rgNameB')]"
+    },
+    "pVNetID": {
+      "type":  "string",
+      "value": "[reference('nestDepPrimary').outputs.vnetId.value]"     
+    },
+    "sVNetID": {
+      "type":  "string",
+      "value": "[reference('nestDepSecondary').outputs.vnetId.value]"     
+    }
+  }
+}
