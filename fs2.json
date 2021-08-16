@@ -32,14 +32,14 @@
   "resources": [
     {
       "type": "Microsoft.Resources/resourceGroups",
-      "apiVersion": "2021-04-01",
+      "apiVersion": "2020-06-01",
       "name": "[concat(parameters('attemptId'), '-' , parameters('rgNameA'))]",
       "location": "[parameters('location')]",
       "properties": {}
     },
     {
       "type": "Microsoft.Resources/resourceGroups",
-      "apiVersion": "2021-04-01",
+      "apiVersion": "2020-06-01",
       "name": "[concat(parameters('attemptId'), '-' , parameters('rgNameB'))]",
       "location": "[parameters('location')]",
       "properties": {}
@@ -47,7 +47,7 @@
     {
       "name": "nestDepPrimary",
       "type": "Microsoft.Resources/deployments",
-      "apiVersion": "2021-04-01",
+      "apiVersion": "2020-06-01",
       "dependsOn": [
         "[concat('Microsoft.Resources/resourceGroups/',concat(parameters('attemptId'), '-' , parameters('rgNameA')))]"
       ],
@@ -148,7 +148,7 @@
             {
              "name": "[parameters('publicIpAddressName')]",
             "type": "Microsoft.Network/publicIpAddresses",
-            "apiVersion": "2021-04-01",
+            "apiVersion": "2020-06-01",
             "location": "[parameters('location')]",
             "properties": {
                 "publicIpAllocationMethod": "[parameters('publicIpAddressType')]"
@@ -166,7 +166,7 @@
         {
              "name": "[parameters('virtualNetworkName')]",
             "type": "Microsoft.Network/virtualNetworks",
-            "apiVersion": "2021-04-01",
+            "apiVersion": "2020-06-01",
             "location": "[parameters('location')]",
             "properties": {
                 "addressSpace": {
@@ -184,7 +184,7 @@
         {
            "name": "[parameters('networkInterfaceName')]",
             "type": "Microsoft.Network/networkInterfaces",
-            "apiVersion": "2021-04-01",
+            "apiVersion": "2020-06-01",
             "location": "[parameters('location')]",
             "dependsOn": [
                 "[concat('Microsoft.Network/networkSecurityGroups/', parameters('networkSecurityGroupName'))]",
@@ -217,7 +217,7 @@
         {
             "name": "[parameters('networkSecurityGroupName')]",
             "type": "Microsoft.Network/networkSecurityGroups",
-            "apiVersion": "2021-04-01",
+            "apiVersion": "2020-06-01",
             "location": "[parameters('location')]",
             "properties": {
                 "securityRules": "[parameters('networkSecurityGroupRules')]"
@@ -230,7 +230,7 @@
         {
               "name": "[parameters('virtualMachineName')]",
             "type": "Microsoft.Compute/virtualMachines",
-            "apiVersion": "2021-04-01",
+            "apiVersion": "2020-06-01",
             "location": "[parameters('location')]",
             "dependsOn": [
                 "[concat('Microsoft.Network/networkInterfaces/', parameters('networkInterfaceName'))]"
@@ -400,7 +400,7 @@
     {
       "name": "nestDepSecondary",
       "type": "Microsoft.Resources/deployments",
-      "apiVersion": "2021-04-01",
+      "apiVersion": "2020-06-01",
       "dependsOn": [
         "[concat('Microsoft.Resources/resourceGroups/', concat(parameters('attemptId'), '-' , parameters('rgNameB')))]"
       ],
@@ -501,7 +501,7 @@
              {
             "name": "[parameters('networkInterfaceName')]",
             "type": "Microsoft.Network/networkInterfaces",
-            "apiVersion": "2021-04-01",
+            "apiVersion": "2020-06-01",
             "location": "[parameters('location')]",
             "dependsOn": [
                 "[concat('Microsoft.Network/networkSecurityGroups/', parameters('networkSecurityGroupName'))]",
@@ -534,7 +534,7 @@
         {
             "name": "[parameters('networkSecurityGroupName')]",
             "type": "Microsoft.Network/networkSecurityGroups",
-            "apiVersion": "2021-04-01",
+            "apiVersion": "2020-06-01",
             "location": "[parameters('location')]",
             "properties": {
                 "securityRules": "[parameters('networkSecurityGroupRules')]"
@@ -546,7 +546,7 @@
         {
             "name": "[parameters('virtualNetworkName')]",
             "type": "Microsoft.Network/virtualNetworks",
-            "apiVersion": "2021-04-01",
+            "apiVersion": "2020-06-01",
             "location": "[parameters('location')]",
             "properties": {
                 "addressSpace": {
@@ -561,7 +561,7 @@
         {
             "name": "[parameters('publicIpAddressName')]",
             "type": "Microsoft.Network/publicIpAddresses",
-            "apiVersion": "2021-04-01",
+            "apiVersion": "2020-06-01",
             "location": "[parameters('location')]",
             "properties": {
                 "publicIpAllocationMethod": "[parameters('publicIpAddressType')]"
@@ -576,7 +576,7 @@
         {
             "name": "[parameters('virtualMachineName')]",
             "type": "Microsoft.Compute/virtualMachines",
-            "apiVersion": "2021-04-01",
+            "apiVersion": "2020-06-01",
             "location": "[parameters('location')]",
             "dependsOn": [
                 "[concat('Microsoft.Network/networkInterfaces/', parameters('networkInterfaceName'))]"
@@ -742,7 +742,7 @@
     {
       "name": "cstmpoldeftags",
       "type": "Microsoft.Authorization/policyDefinitions",
-      "apiVersion": "2021-04-01",
+      "apiVersion": "2020-06-01",
       "properties": {
         "policyType": "Custom",
         "mode": "All",
@@ -767,7 +767,7 @@
     },
     {
       "type": "Microsoft.Authorization/policyAssignments",
-      "apiVersion": "2021-04-01",
+      "apiVersion": "2020-06-01",
       "dependsOn": [
         "Microsoft.Authorization/policyDefinitions/cstmpoldeftags"
       ],
